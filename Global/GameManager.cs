@@ -1,0 +1,118 @@
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance { get; private set; }
+
+    [Header("Ссылки на основные компоненты")]
+    public Player Player { get; private set; }
+    public WeaponManager WeaponManager { get; private set; }
+    public EnemySpawner EnemySpawner { get; private set; }
+
+    [Header("UI и меню")]
+    [SerializeField] private GameObject deathMenu;
+    [SerializeField] private GameObject completedRoundMenu;
+    [SerializeField] private GameObject gameStateUI;
+    [SerializeField] private TextMeshProUGUI waveTimerText;
+
+    [Header("Текущее состояние игры")]
+    public int CurrentWave { get; private set; }
+    public int PlayerLevel { get; private set; }
+    public int Money { get; private set; }
+    public List<Bonus> CurrentBonuses { get; private set; } = new List<Bonus>();
+
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+        Player = FindFirstObjectByType<Player>();
+    }
+
+    private void Start()
+    {
+        WeaponManager = WeaponManager.Instance;
+        EnemySpawner = FindFirstObjectByType<EnemySpawner>();
+
+        if (EnemySpawner != null)
+            EnemySpawner.OnWaveCompleted += HandleWaveCompleted;
+
+        if (EnemySpawner != null)
+            EnemySpawner.StartWave(CurrentWave);
+
+        if (deathMenu != null) deathMenu.SetActive(false);
+        if (completedRoundMenu != null) completedRoundMenu.SetActive(false);
+    }
+
+
+    public void StartNextWave()
+    {
+        gameStateUI.SetActive(true);
+        if (EnemySpawner != null)
+        {
+            CurrentWave++;
+            EnemySpawner.StartWave(CurrentWave);
+            if (completedRoundMenu != null) completedRoundMenu.SetActive(false);
+            if (Player != null) Player.ResetPlayer();
+            Time.timeScale = 1f;
+        }
+    }
+
+    public void RestartWave()
+    {
+        gameStateUI.SetActive(true);
+        if (EnemySpawner != null)
+            EnemySpawner.RestartWave();
+        Time.timeScale = 1f;
+        if (deathMenu != null) deathMenu.SetActive(false);
+        if (Player != null) Player.ResetPlayer();
+    }
+    
+    public void GameLose()
+    {
+        gameStateUI.SetActive(false);
+        if (EnemySpawner != null)
+            EnemySpawner.EndWave();
+        ResetAllWeapons();
+        Time.timeScale = 0f;
+        if (deathMenu != null) deathMenu.SetActive(true);
+    }
+
+    public void WaveTimerUpdate(float waveTime)
+    {
+        int currentTime = Mathf.RoundToInt(waveTime);
+        if (waveTimerText != null && int.Parse(waveTimerText.text) != currentTime && currentTime >= 0)
+        {
+            waveTimerText.text = currentTime.ToString();
+        }
+    }
+    
+    private void HandleWaveCompleted(int waveIndex)
+    {
+        Debug.Log($"Волна {waveIndex + 1} завершена!");
+        ResetAllWeapons();
+        if (completedRoundMenu != null) completedRoundMenu.SetActive(true);
+        Time.timeScale = 0f;
+        gameStateUI.SetActive(false);
+    }
+    
+    private void ResetAllWeapons()
+    {
+        foreach (var weapon in WeaponManager.Instance.GetWeapons())
+        {
+            if(weapon.TryGetComponent(out ProjectileWeapon projectileWeapon))
+            {
+                ObjectPool.Instance.ReturnObjectsToPool(projectileWeapon.BulletPrefab);
+            }
+        }
+    }
+}
