@@ -6,7 +6,6 @@ public class CharacterEffects : MonoBehaviour
 {
     private List<Effect> _activeEffects = new List<Effect>();
 
-    // ReSharper disable Unity.PerformanceAnalysis
     private void AddEffect<T>(Action<T> configure) where T : Effect
     {
         if (Time.timeScale == 0) return;
