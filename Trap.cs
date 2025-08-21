@@ -7,10 +7,13 @@ public class Trap : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        var player = collision.GetComponent<IDamageable>();
-        var playerEffects = collision.GetComponent<CharacterEffects>();
-        playerEffects.ApplyPoisonEffect(1, 3);
-        playerEffects.ApplySpeedBoostEffect(-0.3f, 1.5f);
-        player.TakeDamage(damage, damageType);
+        if (collision.gameObject.activeSelf)
+        {
+            var target = collision.GetComponent<IDamageable>();
+            var playerEffects = collision.GetComponent<CharacterEffects>();
+            playerEffects.ApplyPoisonEffect(1, 3);
+            playerEffects.ApplySpeedBoostEffect(-0.3f, 1.5f);
+            target.TakeDamage(damage, damageType);
+        }
     }
 }

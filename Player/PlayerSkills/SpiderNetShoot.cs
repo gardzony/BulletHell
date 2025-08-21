@@ -10,6 +10,7 @@ public class SpiderNetShoot : MonoBehaviour
     [SerializeField] private float slowDuration = 3f;
     [SerializeField] private float slowCoeff = -0.3f;
     [SerializeField] private ParticleSystem attackEffect;
+    private ParticleSystem _currentEffect;
 
     private List<GameObject> _enemiesInRange = new List<GameObject>();
 
@@ -29,6 +30,10 @@ public class SpiderNetShoot : MonoBehaviour
             _enemiesInRange = StopMouseDrag();
             if (_enemiesInRange.Count > 0) SlowEffectToEnemy(_enemiesInRange);
             PlayAttackEffect();
+        }
+        if (_currentEffect != null && Time.timeScale == 0)
+        {
+            Destroy(_currentEffect.gameObject);
         }
     }
 
@@ -81,21 +86,21 @@ public class SpiderNetShoot : MonoBehaviour
         Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector2 characterPosition = character.position;
         Vector2 directionToMouse = (mousePosition - characterPosition).normalized;
-        ParticleSystem effect = Instantiate(
+        _currentEffect = Instantiate(
             attackEffect,
             characterPosition,
             Quaternion.identity
         );
-        effect.transform.position = characterPosition;
+        _currentEffect.transform.position = characterPosition;
 
         float angle = Mathf.Atan2(directionToMouse.y, directionToMouse.x) * Mathf.Rad2Deg;
 
-        effect.transform.rotation = Quaternion.Euler(-angle, 90f, 0);
+        _currentEffect.transform.rotation = Quaternion.Euler(-angle, 90f, 0);
 
-        effect.gameObject.SetActive(true);
-        effect.Play();
+        _currentEffect.gameObject.SetActive(true);
+        _currentEffect.Play();
         
-        Destroy(effect.gameObject, 1);
+        Destroy(_currentEffect.gameObject, 1);
     }
 
     private void OnDrawGizmos()

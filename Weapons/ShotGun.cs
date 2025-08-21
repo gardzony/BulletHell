@@ -22,7 +22,9 @@ public class ShotGun : ProjectileWeapon
                 Quaternion spreadRotation = Quaternion.Euler(0, 0, randomSpread);
                 Vector2 spreadDirection = spreadRotation * baseDirection;
 
-                bullet.GetComponent<Bullet>().SetTarget(spreadDirection, targetTag);
+                var tmpBullet = bullet.GetComponent<Bullet>();
+                tmpBullet.SetTarget(spreadDirection, targetTag);
+                tmpBullet.SetDamage(damageMultiplier);
             }
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static G;
 
 public class WeaponManager : MonoBehaviour
 {
@@ -12,7 +13,7 @@ public class WeaponManager : MonoBehaviour
     private List<Weapon> _weaponList = new List<Weapon>();
 
     private int _currentCount;
-    private int _maxWeaponCount = 6;
+    public int MaxWeaponCount = 6;
 
     public event Action OnAddRemoveWeapon;
 
@@ -31,12 +32,17 @@ public class WeaponManager : MonoBehaviour
 
     private void Start()
     {
-        _maxWeaponCount = GameManager.Instance.Player.MaxWeaponCount;
+        MaxWeaponCount = GameManager.Instance.Player.MaxWeaponCount;
     }
 
-    public bool AddWeapon(Weapon weaponPrefab)
+    public bool AddWeapon(Weapon weaponPrefab, Rarity rarity = Rarity.Default)
     {
-        if (_currentCount >= _maxWeaponCount)
+        if(rarity == Rarity.Default)
+        {
+            rarity = weaponPrefab.Rarity;
+        }
+
+        if (_currentCount >= MaxWeaponCount)
         {
             Debug.LogWarning("Оружейные слоты заполнены!");
             return false;
@@ -45,10 +51,12 @@ public class WeaponManager : MonoBehaviour
         int slotIndex = _currentCount;
 
         Weapon spawnedWeapon = Instantiate(weaponPrefab, 
-            weaponAttachPoints[slotIndex].position, 
-            weaponAttachPoints[slotIndex].rotation);
-        spawnedWeapon.transform.SetParent(weaponAttachPoints[slotIndex]);
-        
+            weaponAttachPoints[slotIndex].position,
+            Quaternion.Euler(0, 0, 0),
+            weaponAttachPoints[slotIndex]);
+        spawnedWeapon.transform.localRotation = Quaternion.Euler(0, 0, 0);
+        spawnedWeapon.transform.localScale = new Vector3(1, 1, 1);
+        spawnedWeapon.SetWeaponRarity(rarity);
         spawnedWeapon.gameObject.SetActive(true);
 
         _weaponList.Add(spawnedWeapon);
@@ -73,29 +81,19 @@ public class WeaponManager : MonoBehaviour
             _currentCount--;
         }
 
-        for (int i = index; i < _currentCount; i++)
+        for (int i = 0; i < _currentCount; i++)
         {
             if (_weaponList[i] != null)
             {
                 _weaponList[i].transform.SetParent(weaponAttachPoints[i]);
                 _weaponList[i].transform.position = weaponAttachPoints[i].position;
-                _weaponList[i].transform.rotation = weaponAttachPoints[i].rotation;
-                
-                _weaponList[i].GetComponent<Weapon>().FlipWeaponRotation();
+                _weaponList[i].transform.localRotation = Quaternion.Euler(0, 0, 0);
+                _weaponList[i].transform.localScale = new Vector3(1, 1, 1);
             }
         }
 
         OnAddRemoveWeapon?.Invoke();
         return true;
-    }
-
-    public bool RemoveWeapon(Weapon weapon)
-    {
-        foreach(var tmp in  _weaponList) 
-        {
-            if(tmp == weapon) return RemoveWeapon(weapon);
-        }
-        return false;
     }
     
     public void RemoveAllWeapons()

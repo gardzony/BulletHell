@@ -86,7 +86,14 @@ public class ObjectPool : MonoBehaviour
             }
             ReturnObjectToPool(obj);
         }
-        
+    }
+
+    public void ReturnAllIbjectsToPool()
+    {
+        foreach (var poolEntry in _objectPools)
+        {
+            ReturnObjectsToPool(poolEntry.Key);
+        }
     }
 
     public void ReturnObjectToPool(GameObject obj)

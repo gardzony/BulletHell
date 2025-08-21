@@ -14,30 +14,19 @@ public abstract class ProjectileWeapon : Weapon
     private Quaternion _baseRotation;
     private Vector3 _baseScale;
 
-    protected virtual void Start()
+    protected override void Start()
     {
-        _baseRotation = transform.rotation;
+        base.Start();
+        _baseRotation = transform.localRotation;
         _baseScale = transform.localScale;
 
         ObjectPool.Instance.InitializePool(BulletPrefab, poolSize);
     }
 
-    public override void FlipWeaponRotation()
-    {
-        Vector3 currentEuler = _baseRotation.eulerAngles;
-        currentEuler.y += 180f;
-        _baseRotation = Quaternion.Euler(currentEuler);
-        
-        if (_currentTarget == null)
-        {
-            transform.rotation = _baseRotation;
-        }
-    }
-
     protected virtual void FixedUpdate()
     {
         var hitEnemies = FindEnemiesInAttackRange();
-        if (hitEnemies.Count > 0)
+        if (hitEnemies.Count > 0) 
         {
             _currentTarget = FindNearestEnemy(hitEnemies).gameObject;
             LookAtTarget(_currentTarget);
@@ -45,7 +34,7 @@ public abstract class ProjectileWeapon : Weapon
         else
         {
             _currentTarget = null;
-            transform.rotation = _baseRotation;
+            transform.localRotation = _baseRotation;
             transform.localScale = _baseScale;
         }
 
@@ -103,7 +92,9 @@ public abstract class ProjectileWeapon : Weapon
             bullet.SetActive(true);
 
             Vector2 direction = (target.transform.position - bulletSpawnPosition.position).normalized;
-            bullet.GetComponent<Bullet>().SetTarget(direction, targetTag);
+            var tmpBullet = bullet.GetComponent<Bullet>();
+            tmpBullet.SetTarget(direction, targetTag);
+            tmpBullet.SetDamage(damageMultiplier);
         }
     }
 }

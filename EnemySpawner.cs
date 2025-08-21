@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class EnemySpawner : MonoBehaviour
 {
@@ -88,6 +89,7 @@ public class EnemySpawner : MonoBehaviour
 
         if (_waveTime <= 0)
         {
+            Debug.Log("Wave Complite");
             OnWaveCompleted?.Invoke(_currentWaveIndex);
             _isSpawningStarted = false;
             EndWave();
@@ -201,11 +203,6 @@ public class EnemySpawner : MonoBehaviour
             Destroy(warning.WarningObject);
         }
         _activeWarnings.Clear();
-
-        foreach (EnemyType enemyType in _currentWave.enemies)
-        {
-            ObjectPool.Instance.ReturnObjectsToPool(enemyType.prefab);
-        }
     }
 
     private float CalculateCurrentWaveTime()
@@ -221,7 +218,7 @@ public class EnemySpawner : MonoBehaviour
     {
         foreach(var enemy in wave.enemies)
         {
-            enemy.weight += 5;
+            enemy.weight += enemy.prefab.GetComponent<Enemy>().SpawnWeight;
         }
     }
 

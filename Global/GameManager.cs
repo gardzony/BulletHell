@@ -53,6 +53,19 @@ public class GameManager : MonoBehaviour
         if (completedRoundMenu != null) completedRoundMenu.SetActive(false);
     }
 
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.Z))
+        {
+            if(Time.timeScale == 1)
+            {
+                Time.timeScale = 5;
+            } else if (Time.timeScale != 0) 
+            {
+                Time.timeScale = 1;
+            }
+        }
+    }
 
     public void StartNextWave()
     {
@@ -82,7 +95,7 @@ public class GameManager : MonoBehaviour
         gameStateUI.SetActive(false);
         if (EnemySpawner != null)
             EnemySpawner.EndWave();
-        ResetAllWeapons();
+        ObjectPool.Instance.ReturnAllIbjectsToPool();
         Time.timeScale = 0f;
         if (deathMenu != null) deathMenu.SetActive(true);
     }
@@ -99,20 +112,10 @@ public class GameManager : MonoBehaviour
     private void HandleWaveCompleted(int waveIndex)
     {
         Debug.Log($"Волна {waveIndex + 1} завершена!");
-        ResetAllWeapons();
+        ObjectPool.Instance.ReturnAllIbjectsToPool();
         if (completedRoundMenu != null) completedRoundMenu.SetActive(true);
         Time.timeScale = 0f;
         gameStateUI.SetActive(false);
     }
     
-    private void ResetAllWeapons()
-    {
-        foreach (var weapon in WeaponManager.Instance.GetWeapons())
-        {
-            if(weapon.TryGetComponent(out ProjectileWeapon projectileWeapon))
-            {
-                ObjectPool.Instance.ReturnObjectsToPool(projectileWeapon.BulletPrefab);
-            }
-        }
-    }
 }
