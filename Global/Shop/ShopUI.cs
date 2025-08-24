@@ -37,17 +37,16 @@ public class ShopUI : MonoBehaviour
 
     private IEnumerator ProcessCardsSpawn()
     {
-        List<G.Rarity> rarityList = new List<G.Rarity>();
-
-        var items = Shop.Instance.GetRandomCardsItems(out rarityList);
+        var items = Shop.Instance.GetRandomCardsItems();
 
         for (int i = 0; i < cardsToSpawn.Length; i++)
         {
-            cardsToSpawn[i].SetCardAttributes(items[i].Icon, items[i].Name, items[i].Description, items[i].Price, rarityList[i]);
+            cardsToSpawn[i].SetCardAttributes(items[i].ItemSprite, items[i].ItemName, items[i].ItemDescription, items[i].ItemPrice, items[i].ItemRarity);
             cardsToSpawn[i].gameObject.SetActive(true);
             yield return cardsToSpawn[i].Show();
         }
     }
+
     public void ShopReroll()
     {
         if (isActive)
@@ -59,5 +58,15 @@ public class ShopUI : MonoBehaviour
             }
             _currentCoroutine = StartCoroutine(ProcessCardsSpawn());
         }
+    }
+
+    public bool[] GetCardsLockState()
+    {
+        bool[] tmp = new bool[3];
+        for (int i = 0; i < cardsToSpawn.Length; i++)
+        {
+            tmp[i] = cardsToSpawn[i].IsLocked;
+        }
+        return tmp;
     }
 }

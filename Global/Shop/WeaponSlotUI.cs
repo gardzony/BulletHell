@@ -41,7 +41,7 @@ public class WeaponSlotUI : MonoBehaviour
         var weapon = WeaponManager.Instance.GetWeapon(SlotId);
         if (weapon is ISellable sellable)
         {
-            Shop.Instance.IncreasePlayerMoney(sellable.Price);
+            Shop.Instance.IncreasePlayerMoney(sellable.Price / 2);
             DeleteWeapon();
         }
     }
@@ -79,6 +79,8 @@ public class WeaponSlotUI : MonoBehaviour
     {
         var tmp = WeaponManager.Instance.GetWeapons();
         mergeButton.interactable = false;
+        if (tmp[SlotId].Rarity == Rarity.Legendary) return false;
+
         for (int i = 0; i < tmp.Count; i++)
         {
             if (i != SlotId)

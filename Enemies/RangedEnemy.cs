@@ -4,6 +4,7 @@ public class RangedEnemy : Enemy
 {
     [SerializeField] protected GameObject projectilePrefab;
     [SerializeField] protected float attackDistance;
+    [SerializeField] protected float attackRadius;
     protected float distanceToPlayer;
     protected bool isInAttackRange;
 
@@ -17,7 +18,7 @@ public class RangedEnemy : Enemy
     {
         base.Update();
         distanceToPlayer = (player.transform.position - transform.position).magnitude;
-        isInAttackRange = Mathf.Abs(distanceToPlayer - attackDistance) <= 0.5f;
+        isInAttackRange = Mathf.Abs(distanceToPlayer - attackDistance) <= attackRadius;
         EnemyMovement();
 
         if (attackTimer < attackFrequency)
@@ -57,7 +58,7 @@ public class RangedEnemy : Enemy
         if (player != null && !IsEnemyDead && !isInAttackRange)
         {
             Vector2 direction;
-            if (distanceToPlayer < attackDistance - 0.5f) direction = -(player.transform.position - transform.position).normalized;
+            if (distanceToPlayer < attackDistance - attackRadius) direction = -(player.transform.position - transform.position).normalized;
             else direction = (player.transform.position - transform.position).normalized;
             selfRB.linearVelocity = direction * (moveSpeed + (moveSpeed * Mathf.Clamp(speedMultiplayer, -0.7f, 1)));
         }

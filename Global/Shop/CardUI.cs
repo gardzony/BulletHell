@@ -1,5 +1,4 @@
 using DG.Tweening;
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,7 +16,11 @@ public class CardUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI cardName;
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI priceText;
+    [SerializeField] private Image lockButtonImage;
+    [SerializeField] private Sprite lockCloseIcon;
+    [SerializeField] private Sprite lockOpenIcon;
 
+    public bool IsLocked = false;
     private int _price;
     private Sequence _animation;
     private Vector2 _targetBodyPosition;
@@ -70,11 +73,11 @@ public class CardUI : MonoBehaviour
     public void SetCardAttributes(Sprite icon, string name, string description, int price, Rarity rarity)
     {
         GetComponent<Image>().color = GetRarityColor(rarity);
-        if (cardIcon != null) cardIcon.sprite = icon;
-        if (cardName != null) cardName.text = name;
+        cardIcon.sprite = icon;
+        cardName.text = name;
         _price = price;
-        if (priceText != null) priceText.text = _price.ToString();
-        if (descriptionText != null) descriptionText.text = description;
+        priceText.text = _price.ToString();
+        descriptionText.text = description;
         CanBuy();
     }
 
@@ -87,6 +90,23 @@ public class CardUI : MonoBehaviour
 
     public void Buy()
     {
-        if(Shop.Instance.BuyItem(CardID)) Hide();
+        if (Shop.Instance.BuyItem(CardID))
+        {
+            if(IsLocked) ChangeLockState();
+            Hide();
+        }
+    }
+
+    public void ChangeLockState()
+    {
+        if(IsLocked)
+        {
+            IsLocked = false;
+            lockButtonImage.sprite = lockOpenIcon;
+        } else
+        {
+            IsLocked = true;
+            lockButtonImage.sprite = lockCloseIcon;
+        }
     }
 }

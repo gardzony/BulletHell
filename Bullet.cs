@@ -4,7 +4,8 @@ public class Bullet : BaseBullet
 {
     public void SetDamage(float damageMultiplier)
     {
-        damage = (baseDamage + baseDamage * BuffManager.Instance.DamageBuffs[damageType]) * damageMultiplier;
+        var buffManager = BuffManager.Instance;
+        damage = (baseDamage + buffManager.DamageAdditionalBuffs[damageType]) * damageMultiplier * (buffManager.DamageCoeffBuffs[damageType] + 1);
         Debug.Log(damage);
     }
 }

@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject completedRoundMenu;
     [SerializeField] private GameObject gameStateUI;
     [SerializeField] private TextMeshProUGUI waveTimerText;
+    [SerializeField] private TextMeshProUGUI waveIndexText;
 
     [Header("Текущее состояние игры")]
     public int CurrentWave { get; private set; }
@@ -51,6 +52,7 @@ public class GameManager : MonoBehaviour
 
         if (deathMenu != null) deathMenu.SetActive(false);
         if (completedRoundMenu != null) completedRoundMenu.SetActive(false);
+        waveIndexText.text = "Волна: " + (CurrentWave + 1).ToString();
     }
 
     private void Update()
@@ -76,12 +78,14 @@ public class GameManager : MonoBehaviour
             EnemySpawner.StartWave(CurrentWave);
             if (completedRoundMenu != null) completedRoundMenu.SetActive(false);
             if (Player != null) Player.ResetPlayer();
+            waveIndexText.text = "Волна: " + (CurrentWave + 1).ToString();
             Time.timeScale = 1f;
         }
     }
 
     public void RestartWave()
     {
+        Shop.Instance.WaveLoseShopUpdate();
         gameStateUI.SetActive(true);
         if (EnemySpawner != null)
             EnemySpawner.RestartWave();

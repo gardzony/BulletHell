@@ -49,6 +49,18 @@ public static class G
             _ => new Color32(128, 128, 128, 75)
         };
     }
+
+    public static int GetItemPriceByRarityWaveIndex(int basePrice, Rarity rarity, int waveIndex)
+    {
+        int price = basePrice + (basePrice * (int)rarity / 2) + (basePrice * (waveIndex) / 10);
+        return price;
+    }
+
+    public static int GetItemPriceByWaveIndex(int basePrice, int waveIndex)
+    {
+        int price = basePrice + basePrice * waveIndex / 10;
+        return price;
+    }
 }
 
 /*

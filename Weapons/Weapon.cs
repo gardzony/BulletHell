@@ -39,11 +39,17 @@ public class Weapon : MonoBehaviour, ISellable
     {
         Rarity = rarity;
         SetDamageMultiplier();
+        SetWeaponPriceByRarity();
     }
 
     protected void SetDamageMultiplier()
     {
         damageMultiplier = 1 + (int)weaponRarity / 5.0f;
         Debug.Log("DamageMultiplaire " + damageMultiplier);
+    }
+
+    protected void SetWeaponPriceByRarity()
+    {
+        weaponPrice = G.GetItemPriceByRarityWaveIndex(weaponPrice, weaponRarity, GameManager.Instance.CurrentWave);
     }
 }

@@ -16,18 +16,22 @@ public class Shop : MonoBehaviour
     [SerializeField] private List<GameObject> sellableItemsListMono;
     [SerializeField] private List<ScriptableObject> sellableItemsListSO;
     [SerializeField] private List<TextMeshProUGUI> moneyTextsTMP;
-
+    [SerializeField] private int baseRerollCost = 1;
     [SerializeField] TextMeshProUGUI rerollCostText;
     [SerializeField] Button rerollButton;
 
     private Dictionary<Rarity, List<ISellable>> _sellableItemsDicttionary;
 
-    private int _rerollCost = 10;
+    private int _currentWaveMoneyIncome;
+    private GameManager _gameManager;
+    private WeaponManager _weaponManager;
+    private int _rerollCost = 1;
     private ShopUI _shopUI;
     private List<Weapon> _currentWeapons = new List<Weapon>();
-    private List<ISellable> _currentSellable = new List<ISellable>();
-    private List<Rarity> _selectedRarityList;
-
+    private ISellable[] _currentSellable = new ISellable[3];
+    private List<ShopItem> _chosenItems;
+    private Rarity[] _chosenRarity = new Rarity[3];
+    private bool[] _cardsLockState = new bool[3];
     public int PlayerMoney = 100;
 
     public static Shop Instance { get; private set; }
@@ -51,25 +55,28 @@ public class Shop : MonoBehaviour
     {
         _shopUI = GetComponent<ShopUI>();
         StartCoroutine(ConvertItemListsToDictionary());
-        WeaponManager.Instance.AddWeapon(pistol);
+        _gameManager = GameManager.Instance;
+        _gameManager.EnemySpawner.OnWaveCompleted += WaveUpdate;
+        _weaponManager = _gameManager.WeaponManager;
+        _weaponManager.AddWeapon(pistol);
         FastCheck();
-        WeaponManager.Instance.OnAddRemoveWeapon += FastCheck;
+        _weaponManager.OnAddRemoveWeapon += FastCheck;
+        _rerollCost = baseRerollCost;
         rerollCostText.text = _rerollCost.ToString();
-        _selectedRarityList = new List<Rarity>();
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.F))
         {
-            WeaponManager.Instance.AddWeapon(pistol);
-            WeaponManager.Instance.AddWeapon(shotgun, Rarity.Rare);
+            _weaponManager.AddWeapon(pistol);
+            _weaponManager.AddWeapon(shotgun, Rarity.Legendary);
         }
     }
 
     private void CheckWEaponCount()
     {
-        _currentWeapons = WeaponManager.Instance.GetWeapons();
+        _currentWeapons = _weaponManager.GetWeapons();
     }
 
     public void PrintWeaponLayoutGrid()
@@ -99,12 +106,13 @@ public class Shop : MonoBehaviour
 
     private void OnDestroy()
     {
-        WeaponManager.Instance.OnAddRemoveWeapon -= FastCheck;
+        _weaponManager.OnAddRemoveWeapon -= FastCheck;
+        _gameManager.EnemySpawner.OnWaveCompleted -= WaveUpdate;
     }
 
     private IEnumerator ConvertItemListsToDictionary()
     {
-        _sellableItemsDicttionary = Enum.GetValues(typeof(G.Rarity)).Cast<G.Rarity>().ToDictionary(type => type, type => new List<ISellable>());
+        _sellableItemsDicttionary = Enum.GetValues(typeof(Rarity)).Cast<Rarity>().ToDictionary(type => type, type => new List<ISellable>());
 
         foreach (var item in sellableItemsListMono)
         {
@@ -121,25 +129,58 @@ public class Shop : MonoBehaviour
                 yield return null;
             }
         }
-        Debug.Log(_sellableItemsDicttionary[G.Rarity.Common].Count);
+        Debug.Log(_sellableItemsDicttionary[Rarity.Common].Count);
     }
 
-    public List<ISellable> GetRandomCardsItems(out List<Rarity> selectedRarityListTmp)
+    public List<ShopItem> GetRandomCardsItems()
     {
-        _selectedRarityList.Clear();
-        _currentSellable.Clear();
-        selectedRarityListTmp = new List<Rarity>();
-
-        while (_currentSellable.Count < 3)
+        int itemsCount = 0;
+        _cardsLockState = GetComponent<ShopUI>().GetCardsLockState();
+        foreach (var item in _currentSellable)
         {
+            if (item != null) itemsCount++;
+        }
+
+        if (itemsCount > 0)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (!_cardsLockState[i])
+                {
+                    _currentSellable[i] = null;
+                    itemsCount--;
+                }
+            }
+        }
+
+        if(itemsCount > 0)
+        {
+            for(int i = 0; i < 3; i++)
+            {
+                if(_currentSellable[i] != null) _chosenRarity[i] = _chosenItems[i].ItemRarity;
+            }
+        }
+        
+        while (itemsCount < 3)
+        {
+            var currentIndex = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                if (_currentSellable[i] == null) currentIndex = i;
+            }
             var availableItems = new Dictionary<Rarity, List<ISellable>>();
             foreach (var pair in _sellableItemsDicttionary)
             {
                 availableItems[pair.Key] = new List<ISellable>(pair.Value);
             }
 
-            Rarity selectedRarity = GetRandomRarity();
-            selectedRarityListTmp.Add(selectedRarity);
+            Rarity selectedRarity = _chosenRarity[currentIndex];
+            if (!_cardsLockState[currentIndex])
+            {
+                selectedRarity = GetRandomRarity();
+                _chosenRarity[currentIndex] = selectedRarity;
+            }
+
             Debug.Log(selectedRarity);
 
             var eligibleItems = availableItems
@@ -156,48 +197,48 @@ public class Shop : MonoBehaviour
             if (eligibleItems.Count == 0)
             {
                 Debug.LogWarning($"No items available for rarity {selectedRarity}");
-                selectedRarityListTmp.Remove(selectedRarityListTmp[_currentSellable.Count]);
                 continue;
             }
             ISellable selectedItem = eligibleItems[Random.Range(0, eligibleItems.Count)];
-
-            _currentSellable.Add(selectedItem);
+            _currentSellable[currentIndex] = selectedItem;
+            itemsCount++;
         }
-        _selectedRarityList.AddRange(selectedRarityListTmp);
-        return _currentSellable;
+
+        _chosenItems = ConvertISellableToShopItems(_currentSellable, _chosenRarity);
+
+        return _chosenItems;
     }
 
     public bool BuyItem(int cardId)
     {
         bool flag = false;
-        if(_currentSellable[cardId] is Weapon weapon) 
+        if (_currentSellable[cardId] is Weapon weapon)
         {
-            if (WeaponManager.Instance.GetWeaponCount() < WeaponManager.Instance.MaxWeaponCount)
+            if (_weaponManager.GetWeaponCount() < _weaponManager.MaxWeaponCount)
             {
-                WeaponManager.Instance.AddWeapon(weapon, _selectedRarityList[cardId]);
-                PlayerMoney -= _currentSellable[cardId].Price;
+                _weaponManager.AddWeapon(weapon, _chosenItems[cardId].ItemRarity);
+                IncreasePlayerMoney(-_chosenItems[cardId].ItemPrice);
                 flag = true;
             }
-            else if (MergeAvailableCheck(weapon, _selectedRarityList[cardId])) 
-            { 
-                WeaponManager.Instance.AddWeapon(weapon, _selectedRarityList[cardId] + 1);
-                PlayerMoney -= _currentSellable[cardId].Price;
+            else if (MergeAvailableCheck(weapon, _chosenItems[cardId].ItemRarity))
+            {
+                _weaponManager.AddWeapon(weapon, _chosenItems[cardId].ItemRarity + 1);
+                IncreasePlayerMoney(-_chosenItems[cardId].ItemPrice);
                 flag = true;
             }
-        } else if(_currentSellable[cardId] is Bonus bonus)
+        } else if (_currentSellable[cardId] is Bonus bonus)
         {
             BonusManager.Instance.AddBonus(bonus);
-            PlayerMoney -= _currentSellable[cardId].Price;
+            IncreasePlayerMoney(-_chosenItems[cardId].ItemPrice);
             flag = true;
         }
-        UpdateShopUI();
-        OnMoneyChange?.Invoke();
         return flag;
     }
 
     public void IncreasePlayerMoney(int money)
     {
         PlayerMoney += money;
+        if(money > 0 && Time.timeScale > 0) _currentWaveMoneyIncome += money;
         OnMoneyChange?.Invoke();
         UpdateShopUI();
     }
@@ -205,6 +246,7 @@ public class Shop : MonoBehaviour
     public void RerollShopCards()
     {
         PlayerMoney -= _rerollCost;
+        _rerollCost *= 2;
         _shopUI.ShopReroll();
         UpdateShopUI();
     }
@@ -213,6 +255,7 @@ public class Shop : MonoBehaviour
     {
         CurrentMoneyUpdateUI();
         CheckRerollAvailable();
+        rerollCostText.text = _rerollCost.ToString();
     }
 
     private void CurrentMoneyUpdateUI()
@@ -221,6 +264,14 @@ public class Shop : MonoBehaviour
         {
             item.text = PlayerMoney.ToString();
         }
+    }
+
+    public void WaveLoseShopUpdate()
+    {
+        PlayerMoney -= _currentWaveMoneyIncome;
+        _currentWaveMoneyIncome = 0;
+        OnMoneyChange?.Invoke();
+        UpdateShopUI();
     }
 
     private void CheckRerollAvailable()
@@ -232,20 +283,52 @@ public class Shop : MonoBehaviour
         else rerollButton.interactable = true;
     }
 
+    public void WaveUpdate(int waveIndex)
+    {
+        CalculateRerollPrice(waveIndex);
+        _currentWaveMoneyIncome = 0;
+    }
+
+    public void CalculateRerollPrice(int waveIndex)
+    {
+        _rerollCost = GetItemPriceByWaveIndex(baseRerollCost, waveIndex * 10);
+        rerollCostText.text = _rerollCost.ToString();
+    }
+
     private bool MergeAvailableCheck(Weapon weapon, Rarity rarity)
     {
         if (rarity == Rarity.Legendary) return false;
-        var tmp = WeaponManager.Instance.GetWeapons();
+        var tmp = _weaponManager.GetWeapons();
         for (int i = 0; i < tmp.Count; i++)
         {
             if (tmp[i].WeaponName == weapon.WeaponName && tmp[i].Rarity == rarity)
             {
                 Debug.Log("Check");
-                WeaponManager.Instance.RemoveWeapon(i);
+                _weaponManager.RemoveWeapon(i);
                 return true;
             }
         }
         return false;
     }
-}
 
+    private List<ShopItem> ConvertISellableToShopItems(ISellable[] sellablesList, Rarity[] chosenRarity)
+    {
+        var tmp = new List<ShopItem>();
+        int i = 0;
+        foreach (var item in sellablesList)
+        {
+            ShopItem shopItem = new ShopItem();
+            shopItem.ItemName = item.Name;
+            shopItem.ItemSprite = item.Icon;
+            shopItem.ItemRarity = chosenRarity[i];
+            i++;
+            if (item is Weapon) shopItem.ItemPrice = GetItemPriceByRarityWaveIndex(item.Price, shopItem.ItemRarity, _gameManager.CurrentWave);
+            else shopItem.ItemPrice = GetItemPriceByWaveIndex(item.Price, _gameManager.CurrentWave);
+
+            shopItem.ItemDescription = item.Description;
+
+            tmp.Add(shopItem);
+        }
+        return tmp;
+    }
+}
