@@ -43,7 +43,7 @@ public class BuffManager : MonoBehaviour
         }
     }
 
-    public void UpdateCoeffDamage(G.DamageType type, float damageCoeff)
+    public void UpdatePercentDamage(G.DamageType type, float damageCoeff)
     {
         foreach (var key in DamageCoeffBuffs.Keys.ToList())
         {

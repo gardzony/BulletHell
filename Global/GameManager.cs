@@ -19,10 +19,11 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI waveIndexText;
 
     [Header("Текущее состояние игры")]
+    public string PlayerName;
     public int CurrentWave { get; private set; }
     public int PlayerLevel { get; private set; }
     public int Money { get; private set; }
-    public List<Bonus> CurrentBonuses { get; private set; } = new List<Bonus>();
+    public List<string> CurrentBonuses { get; private set; } = new List<string>();
 
 
     private void Awake()
@@ -37,6 +38,7 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
         }
         Player = FindFirstObjectByType<Player>();
+        PlayerName = Player.Name;
     }
 
     private void Start()
@@ -67,6 +69,7 @@ public class GameManager : MonoBehaviour
                 Time.timeScale = 1;
             }
         }
+        if (Input.GetKeyDown(KeyCode.B)) TestLoadGame();
     }
 
     public void StartNextWave()
@@ -80,6 +83,19 @@ public class GameManager : MonoBehaviour
             if (Player != null) Player.ResetPlayer();
             waveIndexText.text = "Волна: " + (CurrentWave + 1).ToString();
             Time.timeScale = 1f;
+            if (CurrentWave > 0)
+            {
+                var gameState = new GameState
+                {
+                    PlayerPrefabName = PlayerName,
+                    WaveNumber = CurrentWave,
+                    PlayerLevel = PlayerLevel,
+                    PlayerMoney = Money,
+                    Bonuses = GetBonusesState(),
+                    Weapons = GetWeaponsState()
+                };
+                SaveLoadService.SaveGame(gameState);
+            }
         }
     }
 
@@ -104,6 +120,18 @@ public class GameManager : MonoBehaviour
         if (deathMenu != null) deathMenu.SetActive(true);
     }
 
+    public void TestLoadGame()
+    {
+        Time.timeScale = 0f;
+        var gameState = SaveLoadService.LoadGame();
+        Debug.Log(gameState.PlayerPrefabName);
+        Debug.Log(gameState.Bonuses.Count);
+        Debug.Log(gameState.Weapons.Count);
+        Debug.Log(gameState.Weapons[0]);
+        Debug.Log(gameState.Weapons[1]);
+        Debug.Log(gameState.Weapons[2]);
+    }
+
     public void WaveTimerUpdate(float waveTime)
     {
         int currentTime = Mathf.RoundToInt(waveTime);
@@ -122,4 +150,25 @@ public class GameManager : MonoBehaviour
         gameStateUI.SetActive(false);
     }
     
+    private List<string> GetBonusesState()
+    {
+        var bonuses = new List<string>();
+        var currentBonuses = BonusManager.Instance.GetBonuses();
+        foreach (var bonus in currentBonuses)
+        {
+            bonuses.Add(bonus.Name);
+        }
+        return bonuses;
+    }
+
+    private List<string> GetWeaponsState()
+    {
+        var list = new List<string>();
+        var currentWeapons = WeaponManager.Instance.GetWeapons();
+        foreach (var weapon in currentWeapons)
+        {
+            list.Add(weapon.WeaponName + " " + weapon.Rarity.ToString());
+        }
+        return list;
+    }
 }

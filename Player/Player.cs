@@ -40,6 +40,7 @@ public class Player : MonoBehaviour, IDamageable, IEffectable
         get { return baseHealth; }
         private set { baseHealth = value; }
     }
+    public string Name;
 
     private void Start()
     {

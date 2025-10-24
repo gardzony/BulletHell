@@ -50,5 +50,8 @@ public class BonusManager : MonoBehaviour
         OnBonusResearch?.Invoke();
     }
 
-    public void LoadBonuses(List<Bonus> jsonBonuses) => Bonuses = jsonBonuses;
+    public List<Bonus> GetBonuses()
+    {
+        return Bonuses;
+    }
 }

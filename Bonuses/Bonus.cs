@@ -1,8 +1,6 @@
 using Unity.VisualScripting;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Bonus", menuName = "Game/Bonuses/Base Bonus")]
-
 public abstract class Bonus : ScriptableObject, ISellable
 {
     [SerializeField] private Sprite bonusIcon;
